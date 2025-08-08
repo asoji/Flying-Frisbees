@@ -16,8 +16,20 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.hit.EntityHitResult;
 import net.minecraft.world.World;
+import software.bernie.geckolib.GeckoLib;
+import software.bernie.geckolib.animatable.GeoEntity;
+import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
+import software.bernie.geckolib.animatable.manager.AnimatableManager;
+import software.bernie.geckolib.animatable.processing.AnimationController;
+import software.bernie.geckolib.animatable.processing.AnimationTest;
+import software.bernie.geckolib.animation.PlayState;
+import software.bernie.geckolib.animation.RawAnimation;
+import software.bernie.geckolib.util.GeckoLibUtil;
 
-public class FrisbeeEntity extends PersistentProjectileEntity {
+public class FrisbeeEntity extends PersistentProjectileEntity implements GeoEntity {
+	protected static final RawAnimation SPIN_ANIM = RawAnimation.begin().thenLoop("spinning");
+	private final AnimatableInstanceCache geoCache = GeckoLibUtil.createInstanceCache(this);
+
 	public static final ItemStack defaultItemStack = new ItemStack(FFItems.FRISBEE);
 	private static final boolean DEFAULT_DEALT_DAMAGE = false;
 	private boolean dealtDamage = false;
@@ -84,5 +96,23 @@ public class FrisbeeEntity extends PersistentProjectileEntity {
 		this.deflect(ProjectileDeflection.SIMPLE, entity, this.getOwner(), false);
 		this.setVelocity(this.getVelocity().multiply(0.02, 0.2, 0.02));
 		this.playSound(SoundEvents.ITEM_TRIDENT_HIT, 1.0F, 1.0F);
+	}
+
+	//GeckoLib Shenanigans
+	@Override
+	public void registerControllers(final AnimatableManager.ControllerRegistrar controllers) {
+		controllers.add(new AnimationController<FrisbeeEntity>("spinning", 5, this::spinAnimController));
+	}
+	protected <E extends FrisbeeEntity> PlayState spinAnimController(final AnimationTest<E> animTest)
+	{
+		if (animTest.isMoving())
+		{
+			return animTest.setAndContinue(SPIN_ANIM);
+		}
+		return PlayState.STOP;
+	}
+	@Override
+	public AnimatableInstanceCache getAnimatableInstanceCache() {
+		return this.geoCache;
 	}
 }
